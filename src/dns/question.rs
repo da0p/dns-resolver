@@ -22,10 +22,7 @@ impl Question {
     }
 
     pub fn parse(question: &[u8]) -> Result<(usize, Question), Box<dyn Error>> {
-        let null_pos = question
-            .iter()
-            .position(|&x| x == 0x00)
-            .ok_or("Can't find null character!")?;
+        let null_pos = utility::find_first_null(question)?;
         let q_name = question[0..null_pos + 1].to_vec();
         let q_type = utility::to_u16(&question[null_pos + 1..null_pos + 3]);
         let q_class = utility::to_u16(&question[null_pos + 3..question.len()]);
