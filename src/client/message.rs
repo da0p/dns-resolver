@@ -1,7 +1,7 @@
-use std::error::Error;
 use crate::client::header::{Flag, Header};
 use crate::client::question::Question;
 use crate::client::rr::ResourceRecord;
+use std::error::Error;
 
 pub struct DnsMessage {
     pub header: Header,
@@ -87,27 +87,32 @@ impl DnsMessage {
     }
 
     pub fn parse(message: &Vec<u8>) -> Result<DnsMessage, Box<dyn Error>> {
-        let (start, header) = Header::parse(&message[0..96])?;
+        let mut start = 0;
+        let parsed_value= Header::parse(&message, start)?;
+        start = parsed_value.0;
+        let header = parsed_value.1;
 
-        let (mut start, question) = Question::parse(&message[start..])?;
+        let parsed_value = Question::parse(&message, start)?;
+        start = parsed_value.0;
+        let question = parsed_value.1;
 
         let mut answers = vec![];
         for _ in 0..header.an_cnt {
-            let answer = ResourceRecord::parse(&message[start..])?;
+            let answer = ResourceRecord::parse(&message, start)?;
             answers.push(answer.1);
             start = answer.0;
         }
 
         let mut authorities = vec![];
         for _ in 0..header.ns_cnt {
-            let authority = ResourceRecord::parse(&message[start..])?;
+            let authority = ResourceRecord::parse(&message, start)?;
             authorities.push(authority.1);
             start = authority.0;
         }
 
         let mut additionals = vec![];
         for _ in 0..header.ar_cnt {
-            let additional = ResourceRecord::parse(&message[start..])?;
+            let additional = ResourceRecord::parse(&message, start)?;
             additionals.push(additional.1);
             start = additional.0;
         }
@@ -195,5 +200,26 @@ mod tests {
     fn encode_another_invalid_address() {
         let enc_addr = DnsMessage::encode_address(".abc");
         assert_eq!(enc_addr[0..5], [3, 'a' as u8, 'b' as u8, 'c' as u8, 0]);
+    }
+
+    #[test]
+    fn parse_dns_response() {
+        let response_bytes = vec![
+            0x00, 0x16, 0x80, 0x80, 0x00, 0x01, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0x03, 0x64,
+            0x6e, 0x73, 0x06, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x03, 0x63, 0x6f, 0x6d, 0x00,
+            0x00, 0x01, 0x00, 0x01, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0x02, 0x14,
+            0x00, 0x04, 0x08, 0x08, 0x08, 0x08, 0xc0, 0x0c, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00,
+            0x02, 0x14, 0x00, 0x04, 0x08, 0x08, 0x04, 0x04,
+        ];
+
+        let dns_response = DnsMessage::parse(&response_bytes).unwrap();
+        let q_name = DnsMessage::decode_address(&dns_response.question.q_name);
+        println!("address: {}", q_name);
+        let answers = dns_response.answers;
+        println!("IP Address:");
+        for answer in answers {
+            let ip_addr = answer.an_rdata.iter().map(|&seg| seg.to_string()).collect::<Vec<String>>().join(".");
+            println!("{}", ip_addr);
+        }
     }
 }

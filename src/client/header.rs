@@ -26,14 +26,15 @@ impl Flag {
     }
 
     pub fn parse(flags: &[u8]) -> Flag {
-        let r_code = utility::to_u16(&flags[0..4]);
-        let z = utility::to_u16(&flags[4..7]);
-        let ra = utility::to_u16(&flags[7..8]);
-        let rd = utility::to_u16(&flags[8..9]);
-        let tc = utility::to_u16(&flags[9..10]);
-        let aa = utility::to_u16(&flags[10..11]);
-        let op_code = utility::to_u16(&flags[11..15]);
-        let qr = utility::to_u16(&flags[15..16]);
+        let flag = utility::to_u16(flags);
+        let r_code = utility::get_bits_range(flag, 0, 4);
+        let z = utility::get_bits_range(flag, 4, 7);
+        let ra = utility::get_bits_range(flag, 7, 8);
+        let rd = utility::get_bits_range(flag, 8, 9);
+        let tc = utility::get_bits_range(flag, 9, 10);
+        let aa = utility::get_bits_range(flag, 10, 11);
+        let op_code = utility::get_bits_range(flag, 11, 15);
+        let qr = utility::get_bits_range(flag, 15, 16);
 
         Flag {
             qr,
@@ -82,13 +83,13 @@ impl Header {
         header
     }
 
-    pub fn parse(header: &[u8]) -> Result<(usize, Header), Box<dyn Error>> {
-        let id = utility::to_u16(&header[0..16]);
-        let flags = Flag::parse(&header[16..32]);
-        let qd_cnt = utility::to_u16(&header[32..48]);
-        let an_cnt = utility::to_u16(&header[48..64]);
-        let ns_cnt = utility::to_u16(&header[64..80]);
-        let ar_cnt = utility::to_u16(&header[80..96]);
+    pub fn parse(message: &Vec<u8>, start: usize) -> Result<(usize, Header), Box<dyn Error>> {
+        let id = utility::to_u16(&message[start..start + 2]);
+        let flags = Flag::parse(&message[start + 2..start + 4]);
+        let qd_cnt = utility::to_u16(&message[start + 4..start + 6]);
+        let an_cnt = utility::to_u16(&message[start + 6..start + 8]);
+        let ns_cnt = utility::to_u16(&message[start + 8..start + 10]);
+        let ar_cnt = utility::to_u16(&message[start + 10..start + 12]);
 
         let h = Header {
             id,
@@ -99,7 +100,7 @@ impl Header {
             ar_cnt,
         };
 
-        Ok((96, h))
+        Ok((start + 12, h))
     }
 }
 

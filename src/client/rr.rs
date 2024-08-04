@@ -36,14 +36,18 @@ impl ResourceRecord {
         reply
     }
 
-    pub fn parse(resource_record: &[u8]) -> Result<(usize, ResourceRecord), Box<dyn Error>> {
-        let null_pos = utility::find_first_null(resource_record)?;
-        let an_name = resource_record[0..null_pos + 1].to_vec();
-        let an_type = utility::to_u16(&resource_record[null_pos + 1..null_pos + 3]);
-        let an_class = utility::to_u16(&resource_record[null_pos + 3..null_pos + 5]);
-        let an_ttl = utility::to_u32(&resource_record[null_pos + 5..null_pos + 9]);
-        let an_rdlength = utility::to_u16(&resource_record[null_pos + 9..null_pos + 11]);
-        let an_rdata = resource_record[null_pos + 11..].to_vec();
+    pub fn parse(
+        message: &Vec<u8>,
+        start: usize,
+    ) -> Result<(usize, ResourceRecord), Box<dyn Error>> {
+        let offset = (utility::to_u16(&message[start..start + 2]) << 2) >> 2;
+        let null_pos = utility::find_first_null(&message[offset as usize..])?;
+        let an_name = message[offset as usize..null_pos + 1].to_vec();
+        let an_type = utility::to_u16(&message[start + 2..start + 4]);
+        let an_class = utility::to_u16(&message[start + 4..start + 6]);
+        let an_ttl = utility::to_u32(&message[start + 6..start + 10]);
+        let an_rdlength = utility::to_u16(&message[start + 10..start + 12]);
+        let an_rdata = message[start + 12..start + 12 + an_rdlength as usize].to_vec();
 
         let rr = ResourceRecord {
             an_name,
@@ -54,6 +58,6 @@ impl ResourceRecord {
             an_rdata,
         };
 
-        Ok((null_pos + 1, rr))
+        Ok((start + 12 + an_rdlength as usize, rr))
     }
 }

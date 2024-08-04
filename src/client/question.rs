@@ -21,11 +21,11 @@ impl Question {
         question
     }
 
-    pub fn parse(question: &[u8]) -> Result<(usize, Question), Box<dyn Error>> {
-        let null_pos = utility::find_first_null(question)?;
-        let q_name = question[0..null_pos + 1].to_vec();
-        let q_type = utility::to_u16(&question[null_pos + 1..null_pos + 3]);
-        let q_class = utility::to_u16(&question[null_pos + 3..question.len()]);
+    pub fn parse(message: &Vec<u8>, start: usize) -> Result<(usize, Question), Box<dyn Error>> {
+        let null_pos = utility::find_first_null(&message[start..])?;
+        let q_name = message[start..start + null_pos + 1].to_vec();
+        let q_type = utility::to_u16(&message[start + null_pos + 1..start + null_pos + 3]);
+        let q_class = utility::to_u16(&message[start + null_pos + 3..start + null_pos + 5]);
 
         let q = Question {
             q_name,
@@ -33,7 +33,7 @@ impl Question {
             q_class,
         };
 
-        Ok((null_pos + 1, q))
+        Ok((start + null_pos + 5, q))
     }
 }
 

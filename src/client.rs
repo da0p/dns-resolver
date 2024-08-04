@@ -1,5 +1,7 @@
 use std::net::{Ipv4Addr, UdpSocket};
 
+use message::DnsMessage;
+
 pub mod header;
 pub mod message;
 pub mod question;
@@ -29,7 +31,22 @@ impl DnsClient {
         let conn = self.connect(dns_server, 53);
         if conn.is_ok() {
             self.send(dns_server, 53, &dns_question.into_bytes());
-            self.listen();
+            let bytes = self.listen().unwrap();
+            let dns_response = DnsMessage::parse(&bytes).unwrap();
+            println!(
+                "Address: {}",
+                DnsMessage::decode_address(&dns_response.question.q_name)
+            );
+            println!("IP Address:");
+            for answer in dns_response.answers {
+                let ip_addr = answer
+                    .an_rdata
+                    .iter()
+                    .map(|&seg| seg.to_string())
+                    .collect::<Vec<String>>()
+                    .join(".");
+                println!("{}", ip_addr);
+            }
         }
     }
 
