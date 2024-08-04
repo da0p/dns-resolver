@@ -1,13 +1,7 @@
 use std::error::Error;
-
-pub mod header;
-pub mod question;
-pub mod rr;
-pub mod utility;
-
-use header::{Flag, Header};
-use question::Question;
-use rr::ResourceRecord;
+use crate::client::header::{Flag, Header};
+use crate::client::question::Question;
+use crate::client::rr::ResourceRecord;
 
 pub struct DnsMessage {
     pub header: Header,

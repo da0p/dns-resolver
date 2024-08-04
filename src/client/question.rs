@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::dns::utility;
+use crate::client::utility;
 
 pub struct Question {
     pub q_name: Vec<u8>,
