@@ -1,3 +1,4 @@
+use std::error::Error;
 
 pub mod header;
 pub mod question;
@@ -11,49 +12,9 @@ use rr::ResourceRecord;
 pub struct DnsMessage {
     pub header: Header,
     pub question: Question,
-    pub answer: ResourceRecord,
-    pub authority: ResourceRecord,
-    pub additional: ResourceRecord,
-}
-
-impl Default for DnsMessage {
-    fn default() -> DnsMessage {
-        let dns_flags = Flag {
-            qr: 0,
-            op_code: 0,
-            aa: 0,
-            tc: 0,
-            rd: 0,
-            ra: 0,
-            z: 0,
-            r_code: 0,
-        };
-
-        let dns_header = Header {
-            id: 0,
-            flags: dns_flags,
-            qd_cnt: 0,
-            an_cnt: 0,
-            ns_cnt: 0,
-            ar_cnt: 0,
-        };
-
-        let dns_question = Question {
-            q_name: vec![],
-            q_type: 0,
-            q_class: 0,
-        };
-
-        let dns_msg = DnsMessage {
-            header: dns_header,
-            question: dns_question,
-            answer: ResourceRecord::default(),
-            authority: ResourceRecord::default(),
-            additional: ResourceRecord::default(),
-        };
-
-        dns_msg
-    }
+    pub answers: Vec<ResourceRecord>,
+    pub authorities: Vec<ResourceRecord>,
+    pub additionals: Vec<ResourceRecord>,
 }
 
 impl DnsMessage {
@@ -87,9 +48,9 @@ impl DnsMessage {
         let dns_msg = DnsMessage {
             header: dns_header,
             question: dns_question,
-            answer: ResourceRecord::default(),
-            authority: ResourceRecord::default(),
-            additional: ResourceRecord::default(),
+            answers: vec![],
+            authorities: vec![],
+            additionals: vec![],
         };
 
         dns_msg
@@ -104,14 +65,20 @@ impl DnsMessage {
         bytes = self.question.to_be_bytes();
         msg.append(&mut bytes);
 
-        bytes = self.answer.to_be_bytes();
-        msg.append(&mut bytes);
+        for i in 0..self.header.an_cnt {
+            bytes = self.answers[i as usize].to_be_bytes();
+            msg.append(&mut bytes);
+        }
 
-        bytes = self.authority.to_be_bytes();
-        msg.append(&mut bytes);
+        for i in 0..self.header.ns_cnt {
+            bytes = self.authorities[i as usize].to_be_bytes();
+            msg.append(&mut bytes);
+        }
 
-        bytes = self.additional.to_be_bytes();
-        msg.append(&mut bytes);
+        for i in 0..self.header.ar_cnt {
+            bytes = self.additionals[i as usize].to_be_bytes();
+            msg.append(&mut bytes);
+        }
 
         msg
     }
@@ -122,7 +89,44 @@ impl DnsMessage {
         for i in 0..bytes.len() {
             buf[i] = bytes[i];
         }
-
         buf
     }
+
+    pub fn parse(message: &Vec<u8>) -> Result<DnsMessage, Box<dyn Error>> {
+        let (start, header) = Header::parse(&message[0..96])?;
+
+        let (mut start, question) = Question::parse(&message[start..])?;
+
+        let mut answers = vec![];
+        for _ in 0..header.an_cnt {
+            let answer = ResourceRecord::parse(&message[start..])?;
+            answers.push(answer.1);
+            start = answer.0;
+        }
+
+        let mut authorities = vec![];
+        for _ in 0..header.ns_cnt {
+            let authority = ResourceRecord::parse(&message[start..])?;
+            authorities.push(authority.1);
+            start = authority.0;
+        }
+
+        let mut additionals = vec![];
+        for _ in 0..header.ar_cnt {
+            let additional = ResourceRecord::parse(&message[start..])?;
+            additionals.push(additional.1);
+            start = additional.0;
+        }
+
+        let dns_message = DnsMessage {
+            header,
+            question,
+            answers,
+            authorities,
+            additionals
+        };
+
+        Ok(dns_message)
+    }
 }
+

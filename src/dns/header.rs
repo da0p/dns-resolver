@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use crate::dns::utility;
 
 pub struct Flag {
@@ -80,7 +82,7 @@ impl Header {
         header
     }
 
-    pub fn parse(header: &[u8]) -> Header {
+    pub fn parse(header: &[u8]) -> Result<(usize, Header), Box<dyn Error>> {
         let id = utility::to_u16(&header[0..16]);
         let flags = Flag::parse(&header[16..32]);
         let qd_cnt = utility::to_u16(&header[32..48]);
@@ -88,14 +90,16 @@ impl Header {
         let ns_cnt = utility::to_u16(&header[64..80]);
         let ar_cnt = utility::to_u16(&header[80..96]);
 
-        Header {
+        let h = Header {
             id,
             flags,
             qd_cnt,
             an_cnt,
             ns_cnt,
             ar_cnt,
-        }
+        };
+
+        Ok((96, h))
     }
 }
 

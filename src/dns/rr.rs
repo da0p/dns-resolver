@@ -1,3 +1,5 @@
+use std::error::Error;
+
 use crate::dns::utility;
 
 pub struct ResourceRecord {
@@ -34,40 +36,27 @@ impl ResourceRecord {
         reply
     }
 
-    pub fn parse(resource_record: &Vec<u8>) -> ResourceRecord {
-        let null_pos = resource_record.iter().position(|&x| x == 0x00);
-        if null_pos.is_none() {
-            return ResourceRecord::default();
-        }
+    pub fn parse(resource_record: &[u8]) -> Result<(usize, ResourceRecord), Box<dyn Error>> {
+        let null_pos = resource_record
+            .iter()
+            .position(|&x| x == 0x00)
+            .ok_or("Can't find null character!")?;
+        let an_name = utility::decode_address(&resource_record[0..null_pos + 1].to_vec());
+        let an_type = utility::to_u16(&resource_record[null_pos + 2..null_pos + 4]);
+        let an_class = utility::to_u16(&resource_record[null_pos + 4..null_pos + 6]);
+        let an_ttl = utility::to_u32(&resource_record[null_pos + 6..null_pos + 10]);
+        let an_rdlength = utility::to_u16(&resource_record[null_pos + 10..null_pos + 12]);
+        let an_rdata = String::from_utf8(resource_record[null_pos + 12..].to_vec()).unwrap();
 
-        let term_pos = null_pos.unwrap();
-        let an_name = utility::decode_address(&resource_record[0..term_pos + 1].to_vec());
-        let an_type = utility::to_u16(&resource_record[term_pos + 2..term_pos + 4]);
-        let an_class = utility::to_u16(&resource_record[term_pos + 4..term_pos + 6]);
-        let an_ttl = utility::to_u32(&resource_record[term_pos + 6..term_pos + 10]);
-        let an_rdlength = utility::to_u16(&resource_record[term_pos + 10..term_pos + 12]);
-        let an_rdata = String::from_utf8(resource_record[term_pos + 12..].to_vec()).unwrap();
-
-        ResourceRecord{
+        let rr = ResourceRecord {
             an_name,
             an_type,
             an_class,
             an_ttl,
             an_rdlength,
-            an_rdata
-        }
-    }
-}
+            an_rdata,
+        };
 
-impl Default for ResourceRecord {
-    fn default() -> ResourceRecord {
-        ResourceRecord {
-            an_name: String::from(""),
-            an_type: 0,
-            an_class: 0,
-            an_ttl: 0,
-            an_rdlength: 0,
-            an_rdata: String::from(""),
-        }
+        Ok((null_pos + 1, rr))
     }
 }

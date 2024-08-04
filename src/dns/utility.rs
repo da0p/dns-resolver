@@ -89,4 +89,3 @@ mod tests {
         assert_eq!(enc_addr[0..5], [3, 'a' as u8, 'b' as u8, 'c' as u8, 0]);
     }
 }
-
