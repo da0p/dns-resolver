@@ -8,11 +8,13 @@ pub mod question;
 pub mod rr;
 pub mod utility;
 
+/// A DNS client to query for a host name
 pub struct DnsClient {
     binding_socket: UdpSocket,
 }
 
 impl DnsClient {
+    /// Create a new DNS client
     pub fn new() -> DnsClient {
         let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, 0)).expect("Can't create socket!");
 
@@ -26,6 +28,7 @@ impl DnsClient {
         }
     }
 
+    /// Query a host name from a DNS server
     pub fn ask(&self, name: &str, dns_server: &str) {
         let dns_question = message::DnsMessage::new(name);
         let conn = self.connect(dns_server, 53);
@@ -50,6 +53,7 @@ impl DnsClient {
         }
     }
 
+    /// Send a udp message to a remote address
     fn send(&self, remote_addr: &str, port: u16, msg: &[u8]) -> usize {
         let result: usize = 0;
         let addr = format!("{}:{}", remote_addr, port);
@@ -69,12 +73,14 @@ impl DnsClient {
         result
     }
 
+    /// Connect to a remote address on a port
     fn connect(&self, remote_addr: &str, port: u16) -> std::io::Result<()> {
         println!("Connecting to {}:{}", remote_addr, port);
         let addr = format!("{}:{}", remote_addr, port);
         self.binding_socket.connect(addr)
     }
 
+    /// Listen to a response from a remote address
     fn listen(&self) -> Option<Vec<u8>> {
         let mut buffer = [0; 1024];
         match self.binding_socket.recv_from(&mut buffer) {

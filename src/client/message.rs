@@ -3,15 +3,22 @@ use crate::client::question::Question;
 use crate::client::rr::ResourceRecord;
 use std::error::Error;
 
+/// DNS message
 pub struct DnsMessage {
+    /// DNS header
     pub header: Header,
+    /// DNS question section
     pub question: Question,
+    /// DNS answer section
     pub answers: Vec<ResourceRecord>,
+    /// DNS authority section
     pub authorities: Vec<ResourceRecord>,
+    /// DNS additional section
     pub additionals: Vec<ResourceRecord>,
 }
 
 impl DnsMessage {
+    /// Create a new DNS message
     pub fn new(address: &str) -> DnsMessage {
         let dns_flags = Flag {
             qr: 0,
@@ -50,6 +57,7 @@ impl DnsMessage {
         dns_msg
     }
 
+    /// Transform a dns message to a vector of bytes
     pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut msg = vec![];
 
@@ -77,6 +85,7 @@ impl DnsMessage {
         msg
     }
 
+    /// Fill DNS message into an array of bytes
     pub fn into_bytes(&self) -> [u8; 128] {
         let bytes = self.to_be_bytes();
         let mut buf = [0; 128];
@@ -86,6 +95,7 @@ impl DnsMessage {
         buf
     }
 
+    /// Parse a vector of bytes into a DNS message
     pub fn parse(message: &Vec<u8>) -> Result<DnsMessage, Box<dyn Error>> {
         let mut start = 0;
         let parsed_value= Header::parse(&message, start)?;
@@ -128,6 +138,7 @@ impl DnsMessage {
         Ok(dns_message)
     }
 
+    /// Encode an address into the format for DNS
     pub fn encode_address(address: &str) -> Vec<u8> {
         let mut encoded_addr = vec![];
         let segs = address
@@ -145,6 +156,7 @@ impl DnsMessage {
         encoded_addr
     }
 
+    /// Decode an address in DNS message
     pub fn decode_address(bytes: &Vec<u8>) -> String {
         let mut segments = vec![];
         let mut i = 0;

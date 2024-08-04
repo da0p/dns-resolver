@@ -2,16 +2,25 @@ use std::error::Error;
 
 use crate::client::utility;
 
+/// DNS resource record
 pub struct ResourceRecord {
+    /// A domain name to which this resource record pertains
     pub an_name: Vec<u8>,
+    /// RR type codes specifying the meaning in rdata
     pub an_type: u16,
+    /// Class of the data in rdata
     pub an_class: u16,
+    /// Time interval in seconds
     pub an_ttl: u32,
+    /// Length of rdata field
     pub an_rdlength: u16,
+    /// A variable length string describing the resource. The format
+    /// varies according to the type and class of the resource record
     pub an_rdata: Vec<u8>,
 }
 
 impl ResourceRecord {
+    /// Transform a resource record to a vector of bytes
     pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut reply = vec![];
 
@@ -36,6 +45,7 @@ impl ResourceRecord {
         reply
     }
 
+    /// Parse a vector of bytes into a resource record
     pub fn parse(
         message: &Vec<u8>,
         start: usize,

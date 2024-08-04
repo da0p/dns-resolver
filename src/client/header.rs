@@ -2,18 +2,40 @@ use std::error::Error;
 
 use crate::client::utility;
 
+/// Flag section in DNS header
 pub struct Flag {
+
+    /// Whether it is a query (0) or a response (1)
     pub qr: u16,
+    /// Kind of query:
+    /// 0 - standard query,
+    /// 1 - inverse query,
+    /// 2 - server status request
     pub op_code: u16,
+    /// Authoritative answer - valid in response
     pub aa: u16,
+    /// Truncation - message was truncated due to excessive length
     pub tc: u16,
+    /// Recursion desired - direct name server to pursue query recursively
     pub rd: u16,
+    /// Recursion availble - denotes whether recursive query support is
+    /// available in the name server
     pub ra: u16,
+    /// Reserved for future use
     pub z: u16,
+    /// Response code
+    /// 0 - no error condition
+    /// 1 - format error
+    /// 2 - server failure
+    /// 3 - name error
+    /// 4 - not implemented
+    /// 5 - refused
+    /// 6-15 - reserved for future use
     pub r_code: u16,
 }
 
 impl Flag {
+    /// Transform the flag to a two-octet number
     pub fn to_be_bytes(&self) -> u16 {
         self.qr << 15
             | self.op_code << 11
@@ -25,6 +47,7 @@ impl Flag {
             | self.r_code
     }
 
+    /// Parse a vector bytes to DNS flag
     pub fn parse(flags: &[u8]) -> Flag {
         let flag = utility::to_u16(flags);
         let r_code = utility::get_bits_range(flag, 0, 4);
@@ -49,16 +72,24 @@ impl Flag {
     }
 }
 
+/// DNS Header
 pub struct Header {
+    /// Identifier from the DNS client
     pub id: u16,
+    /// DNS Flag
     pub flags: Flag,
+    /// Number of questions
     pub qd_cnt: u16,
+    /// Number of answers
     pub an_cnt: u16,
+    /// Number of authority records
     pub ns_cnt: u16,
+    /// Number of additional records
     pub ar_cnt: u16,
 }
 
 impl Header {
+    /// Transform to a vector of bytes
     pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut header = vec![];
 
@@ -83,6 +114,7 @@ impl Header {
         header
     }
 
+    /// Parse a vector of bytes to DNS header
     pub fn parse(message: &Vec<u8>, start: usize) -> Result<(usize, Header), Box<dyn Error>> {
         let id = utility::to_u16(&message[start..start + 2]);
         let flags = Flag::parse(&message[start + 2..start + 4]);

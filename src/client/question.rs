@@ -2,13 +2,18 @@ use std::error::Error;
 
 use crate::client::utility;
 
+/// DNS question section
 pub struct Question {
+    /// Domain name
     pub q_name: Vec<u8>,
+    /// Type of query
     pub q_type: u16,
+    /// Class of query
     pub q_class: u16,
 }
 
 impl Question {
+    /// Transform to a vector of bytes
     pub fn to_be_bytes(&self) -> Vec<u8> {
         let mut question = self.q_name.to_vec();
 
@@ -21,6 +26,7 @@ impl Question {
         question
     }
 
+    /// Parse a vector of bytes to DNS question
     pub fn parse(message: &Vec<u8>, start: usize) -> Result<(usize, Question), Box<dyn Error>> {
         let null_pos = utility::find_first_null(&message[start..])?;
         let q_name = message[start..start + null_pos + 1].to_vec();
