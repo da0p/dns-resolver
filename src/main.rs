@@ -13,5 +13,5 @@ struct Options {
 fn main() {
     let options = Options::parse();
     let dns_client = client::DnsClient::new();
-    dns_client.ask(&options.host, &options.dns_server);
+    dns_client.ask(&options.host, &options.dns_server, 10);
 }

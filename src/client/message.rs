@@ -25,7 +25,7 @@ impl DnsMessage {
             op_code: 0,
             aa: 0,
             tc: 0,
-            rd: 1,
+            rd: 0,
             ra: 0,
             z: 0,
             r_code: 0,

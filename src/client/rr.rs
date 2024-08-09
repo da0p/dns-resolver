@@ -50,24 +50,45 @@ impl ResourceRecord {
         message: &Vec<u8>,
         start: usize,
     ) -> Result<(usize, ResourceRecord), Box<dyn Error>> {
-        let offset = (utility::to_u16(&message[start..start + 2]) << 2) >> 2;
-        let null_pos = utility::find_first_null(&message[offset as usize..])?;
-        let an_name = message[offset as usize..null_pos + 1].to_vec();
-        let an_type = utility::to_u16(&message[start + 2..start + 4]);
-        let an_class = utility::to_u16(&message[start + 4..start + 6]);
-        let an_ttl = utility::to_u32(&message[start + 6..start + 10]);
-        let an_rdlength = utility::to_u16(&message[start + 10..start + 12]);
-        let an_rdata = message[start + 12..start + 12 + an_rdlength as usize].to_vec();
+        let is_pointer = message[start] & 0xC0;
+        if is_pointer == 0xC0 {
+            let offset = (utility::to_u16(&message[start..start + 2]) & 0x3F) as usize;
+            let null_pos = utility::find_first_null(&message[offset as usize..])?;
+            let an_name = message[offset as usize.. offset + null_pos + 1].to_vec();
+            let an_type = utility::to_u16(&message[start + 2..start + 4]);
+            let an_class = utility::to_u16(&message[start + 4..start + 6]);
+            let an_ttl = utility::to_u32(&message[start + 6..start + 10]);
+            let an_rdlength = utility::to_u16(&message[start + 10..start + 12]);
+            let an_rdata = message[start + 12..start + 12 + an_rdlength as usize].to_vec();
 
-        let rr = ResourceRecord {
-            an_name,
-            an_type,
-            an_class,
-            an_ttl,
-            an_rdlength,
-            an_rdata,
-        };
+            let rr = ResourceRecord {
+                an_name,
+                an_type,
+                an_class,
+                an_ttl,
+                an_rdlength,
+                an_rdata,
+            };
+            Ok((start + 12 + an_rdlength as usize, rr))
+        } else {
+            let null_pos = utility::find_first_null(&message[start..])?;
+            let offset = start + null_pos;
+            let an_name = message[start..offset + 1].to_vec();
+            let an_type = utility::to_u16(&message[offset + 1..offset + 3]);
+            let an_class = utility::to_u16(&message[offset + 3..offset + 5]);
+            let an_ttl = utility::to_u32(&message[offset + 5..offset + 9]);
+            let an_rdlength = utility::to_u16(&message[offset + 9..offset + 11]);
+            let an_rdata = message[offset + 11..offset + 11 + an_rdlength as usize].to_vec();
 
-        Ok((start + 12 + an_rdlength as usize, rr))
+            let rr = ResourceRecord {
+                an_name,
+                an_type,
+                an_class,
+                an_ttl,
+                an_rdlength,
+                an_rdata,
+            };
+            Ok((offset + 11 + an_rdlength as usize, rr))
+        }
     }
 }
