@@ -7,3 +7,4 @@ edition = "2021"
 byteorder = "1.5.0"
 rand = "0.8.5"
 clap = { version = "4.5.7", features = ["derive"] }
+spdlog-rs = "0.3"
